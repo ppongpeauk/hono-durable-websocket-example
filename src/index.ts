@@ -1,4 +1,4 @@
-import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { doMiddleware } from "@/middleware";
 import { WebsocketDurableObject } from "@/durable-object";
 import { HonoGeneric } from "@/types";
@@ -13,16 +13,32 @@ app.openapi(
 		method: "post",
 		path: "/broadcast",
 		description: "Broadcast a message to all connected clients.",
+		request: {
+			body: {
+				content: {
+					"application/json": {
+						schema: z.object({
+							message: z.string().openapi({
+								description: "The message to broadcast.",
+								example:
+									"This is a test message over a websocket.",
+							}),
+						}),
+					},
+				},
+			},
+		},
 		responses: {
-			200: {
+			204: {
 				description: "Message broadcasted successfully.",
 			},
 		},
 	}),
-	(c) => {
+	async (c) => {
+		const { message } = await c.req.json();
 		const stub = c.get("durableObjectStub");
-		stub.broadcast("This is a test message over a websocket.");
-		return c.json({ success: true });
+		await stub.broadcast(message);
+		return c.text(null as any, 204);
 	}
 );
 
