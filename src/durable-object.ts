@@ -2,17 +2,8 @@ import { DurableObject } from "cloudflare:workers";
 import { Environment } from "@/types";
 
 export class WebsocketDurableObject extends DurableObject<Environment> {
-	connections: Set<WebSocket>;
-
 	constructor(ctx: DurableObjectState, env: Environment) {
 		super(ctx, env);
-		this.connections = new Set<WebSocket>();
-
-		const websockets = this.ctx.getWebSockets();
-
-		for (const ws of websockets) {
-			this.connections.add(ws);
-		}
 	}
 
 	async fetch(req: Request) {
@@ -20,7 +11,6 @@ export class WebsocketDurableObject extends DurableObject<Environment> {
 		const [client, server] = Object.values(websocketPair);
 
 		this.ctx.acceptWebSocket(server);
-		this.connections.add(client);
 
 		return new Response(null, {
 			status: 101,
@@ -29,7 +19,7 @@ export class WebsocketDurableObject extends DurableObject<Environment> {
 	}
 
 	webSocketError(ws: WebSocket, error: unknown) {
-		this.connections.delete(ws);
+		ws.close();
 	}
 
 	webSocketClose(
@@ -38,12 +28,23 @@ export class WebsocketDurableObject extends DurableObject<Environment> {
 		_reason: string,
 		_wasClean: boolean
 	) {
-		this.connections.delete(ws);
+		ws.close();
 	}
 
 	async broadcast(message: string) {
-		for (const connection of this.connections) {
-			connection.send(message);
+		const webSockets = this.ctx.getWebSockets();
+		console.log(
+			`[Websocket Durable Object] message: ${message}, connections: ${webSockets.length}`
+		);
+
+		/**
+		 * For some odd reason, when the durable object is
+		 * waking up from hibernation, the websocket connections in this.connections
+		 * are not available. But if we use the ctx.getWebSockets() method, it will always
+		 * return the websocket connections.
+		 */
+		for (const ws of webSockets) {
+			ws.send(message);
 		}
 	}
 }
