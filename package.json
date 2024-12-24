@@ -2,10 +2,17 @@
   "name": "hono-durable-websocket-exp",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify"
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types"
   },
   "dependencies": {
-    "hono": "^4.6.14"
+    "@hono/swagger-ui": "^0.5.0",
+    "@hono/zod-openapi": "^0.18.3",
+    "@scalar/hono-api-reference": "^0.5.165",
+    "hono": "^4.6.14",
+    "hono-openapi": "^0.3.0",
+    "zod": "^3.24.1",
+    "zod-openapi": "^4.2.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241218.0",
